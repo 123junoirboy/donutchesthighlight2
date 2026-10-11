@@ -49,7 +49,10 @@ public final class ChestOutlineRenderer {
                     float red = ((color >> 16) & 255) / 255.0F;
                     float green = ((color >> 8) & 255) / 255.0F;
                     float blue = (color & 255) / 255.0F;
-                    LevelRenderer.renderLineBox(pose, lines, box, red, green, blue, 0.95F);
+                    LevelRenderer.renderLineBox(pose, lines,
+                            box.minX, box.minY, box.minZ,
+                            box.maxX, box.maxY, box.maxZ,
+                            red, green, blue, 0.95F);
                 }
             }
         }
