@@ -2,9 +2,9 @@ package com.juno.donutchesthighlight;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
@@ -20,26 +20,20 @@ public final class ChestOutlineRenderer {
 
     private ChestOutlineRenderer() {}
 
-    // In Minecraft 1.21.11 Forge, the old RenderLevelStageEvent was removed.
-    // Register with the replacement block-highlight event and draw from its render callback.
     static {
         RenderHighlightEvent.Block.BUS.addListener(ChestOutlineRenderer::onBlockHighlight);
     }
 
     private static void onBlockHighlight(RenderHighlightEvent.Block event) {
         event.setCustomRenderer((source, pose, translucent, renderState) ->
-                renderNearbyChests(source, event.getCamera()));
+                renderNearbyChests(source, pose));
     }
 
-    private static void renderNearbyChests(net.minecraft.client.renderer.MultiBufferSource.BufferSource source,
-                                           Camera camera) {
+    private static void renderNearbyChests(MultiBufferSource.BufferSource source, PoseStack pose) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) return;
 
         BlockPos center = minecraft.player.blockPosition();
-        double cameraX = camera.getPosition().x;
-        double cameraY = camera.getPosition().y;
-        double cameraZ = camera.getPosition().z;
         VertexConsumer lines = source.getBuffer(RenderTypes.lines());
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
@@ -55,9 +49,7 @@ public final class ChestOutlineRenderer {
                     float red = ((color >> 16) & 255) / 255.0F;
                     float green = ((color >> 8) & 255) / 255.0F;
                     float blue = (color & 255) / 255.0F;
-                    LevelRenderer.renderLineBox(lines, box.minX - cameraX, box.minY - cameraY, box.minZ - cameraZ,
-                            box.maxX - cameraX, box.maxY - cameraY, box.maxZ - cameraZ,
-                            red, green, blue, 0.95F);
+                    LevelRenderer.renderLineBox(pose, lines, box, red, green, blue, 0.95F);
                 }
             }
         }
