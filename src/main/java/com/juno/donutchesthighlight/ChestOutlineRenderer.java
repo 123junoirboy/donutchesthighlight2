@@ -1,11 +1,9 @@
 package com.juno.donutchesthighlight;
 
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.rendertype.RenderTypes;
+import net.minecraft.gizmos.Gizmos;
+import net.minecraft.gizmos.GizmoStyle;
+import net.minecraft.util.ARGB;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -26,15 +24,14 @@ public final class ChestOutlineRenderer {
 
     private static void onBlockHighlight(RenderHighlightEvent.Block event) {
         event.setCustomRenderer((source, pose, translucent, renderState) ->
-                renderNearbyChests(source, pose));
+                renderNearbyChests());
     }
 
-    private static void renderNearbyChests(MultiBufferSource.BufferSource source, PoseStack pose) {
+    private static void renderNearbyChests() {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) return;
 
         BlockPos center = minecraft.player.blockPosition();
-        VertexConsumer lines = source.getBuffer(RenderTypes.lines());
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = -RANGE; x <= RANGE; x++) {
@@ -45,14 +42,11 @@ public final class ChestOutlineRenderer {
                     int color = colorFor(state);
                     if (color == 0) continue;
 
-                    AABB box = new AABB(pos).inflate(0.002);
                     float red = ((color >> 16) & 255) / 255.0F;
                     float green = ((color >> 8) & 255) / 255.0F;
                     float blue = (color & 255) / 255.0F;
-                    LevelRenderer.renderLineBox(pose, lines,
-                            box.minX, box.minY, box.minZ,
-                            box.maxX, box.maxY, box.maxZ,
-                            red, green, blue, 0.95F);
+                    int argb = ARGB.colorFromFloat(0.95F, red, green, blue);
+                    Gizmos.cuboid(new AABB(pos).inflate(0.002), GizmoStyle.stroke(argb));
                 }
             }
         }
