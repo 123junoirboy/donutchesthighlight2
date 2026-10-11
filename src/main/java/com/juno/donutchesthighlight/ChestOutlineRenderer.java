@@ -1,20 +1,17 @@
 package com.juno.donutchesthighlight;
 
-import net.minecraft.client.Camera;
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.rendertype.RenderTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.client.event.RenderLevelStageEvent;
-import net.minecraftforge.eventbus.api.listener.SubscribeEvent;
+import net.minecraftforge.client.event.RenderHighlightEvent;
 import net.minecraftforge.fml.common.Mod;
-import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexConsumer;
-import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.RenderType;
 
 @Mod.EventBusSubscriber(modid = DonutChestHighlight.MOD_ID, value = Dist.CLIENT)
 public final class ChestOutlineRenderer {
@@ -22,21 +19,24 @@ public final class ChestOutlineRenderer {
 
     private ChestOutlineRenderer() {}
 
-    @SubscribeEvent
-    public static void onRenderLevel(RenderLevelStageEvent event) {
-        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_TRANSLUCENT_BLOCKS) return;
+    // In Minecraft 1.21.11 Forge, the old RenderLevelStageEvent was removed.
+    // Register with the replacement block-highlight event and draw from its render callback.
+    static {
+        RenderHighlightEvent.Block.BUS.addListener(ChestOutlineRenderer::onBlockHighlight);
+    }
 
+    private static void onBlockHighlight(RenderHighlightEvent.Block event) {
+        event.setCustomRenderer((source, pose, translucent, renderState) ->
+                renderNearbyChests(source, pose));
+    }
+
+    private static void renderNearbyChests(net.minecraft.client.renderer.MultiBufferSource.BufferSource source,
+                                           PoseStack pose) {
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft.level == null || minecraft.player == null) return;
 
-        Camera camera = event.getCamera();
-        Vec3 cameraPos = camera.getPosition();
         BlockPos center = minecraft.player.blockPosition();
-        PoseStack pose = event.getPoseStack();
-        pose.pushPose();
-        pose.translate(-cameraPos.x, -cameraPos.y, -cameraPos.z);
-
-        VertexConsumer lines = minecraft.renderBuffers().bufferSource().getBuffer(RenderType.lines());
+        VertexConsumer lines = source.getBuffer(RenderTypes.lines());
         BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos();
 
         for (int x = -RANGE; x <= RANGE; x++) {
@@ -55,9 +55,6 @@ public final class ChestOutlineRenderer {
                 }
             }
         }
-
-        pose.popPose();
-        minecraft.renderBuffers().bufferSource().endBatch(RenderType.lines());
     }
 
     private static int colorFor(BlockState state) {
