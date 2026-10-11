@@ -29,7 +29,7 @@ repositories {
 }
 
 dependencies {
-    implementation "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    implementation minecraft.dependency("net.minecraftforge:forge:${minecraft_version}-${forge_version}")
     annotationProcessor 'net.minecraftforge:eventbus-validator:7.0.5'
 }
 
